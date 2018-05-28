@@ -1,6 +1,7 @@
 from posix.mman cimport (
     mmap,
     shm_open,
+    shm_unlink,
     PROT_READ,
     PROT_WRITE,
     MAP_SHARED,
@@ -26,10 +27,14 @@ cdef class Foo:
         self.bar = bar
         self.baz = baz
         self.free_on_dealloc = True
+        self.needs_unlink = False
 
     def __dealloc__(self):
         if self.free_on_dealloc:
             free(self._foo)
+
+        if self.needs_unlink:
+            shm_unlink(<char*>self._foo)
 
     @staticmethod
     cdef Foo from_foo(foo* the_foo):
@@ -86,6 +91,7 @@ def foo_from_shm(bytes tagname):
         NULL, sizeof(foo), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0)
     ))
     ret_foo.free_on_dealloc = False
+    ret_foo.needs_unlink = True
     return ret_foo
 
 def foo_from_mmap(file_name):
@@ -108,5 +114,6 @@ def foo_from_mmap(file_name):
             NULL, sizeof(foo), PROT_READ|PROT_WRITE, MAP_SHARED, f.fileno(), 0)
         ))
         ret_foo.free_on_dealloc = False
+        ret_foo.needs_unlink = True
         return ret_foo
 

@@ -1,5 +1,6 @@
 from posix.mman cimport (
     mmap,
+    munmap,
     shm_open,
     shm_unlink,
     PROT_READ,
@@ -20,7 +21,7 @@ cdef struct foo:
 
 cdef class Foo:
     cdef foo* _foo
-    cdef bint free_on_dealloc
+    cdef bint free_on_dealloc, needs_unlink
 
     def __init__(self, bar=0, baz=0):
         self._foo = <foo*>malloc(sizeof(foo))
@@ -34,7 +35,7 @@ cdef class Foo:
             free(self._foo)
 
         if self.needs_unlink:
-            shm_unlink(<char*>self._foo)
+            munmap(<char*>self._foo, sizeof(foo))
 
     @staticmethod
     cdef Foo from_foo(foo* the_foo):
@@ -117,3 +118,5 @@ def foo_from_mmap(file_name):
         ret_foo.needs_unlink = True
         return ret_foo
 
+def unlink_shm(bytes name):
+    return shm_unlink(<char*>name)

@@ -57,7 +57,7 @@ cdef class Foo:
 
     @property
     def as_bytes(self):
-        return str((<char*>self._foo)[:sizeof(foo)])
+        return bytes((<char*>self._foo)[:sizeof(foo)])
 
     @classmethod
     def from_bytes(cls, bytes foo_bytes):
